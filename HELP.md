@@ -50,3 +50,30 @@ The create and update request body is JSON with `firstName`, `lastName`, and
 `emailAddress` fields. Requests for a missing user return `404 Not Found`.
 
 Run the tests with `mvn test`, or package the application with `mvn package`.
+
+### Deploy from GitHub Actions
+
+The `.github/workflows/deploy-ec2.yml` workflow runs on pushes to `main` and can
+also be started manually. It runs `mvn clean verify`, uploads the JAR to a
+private S3 bucket, and uses Systems Manager Run Command to install it and restart
+the `aws-sandbox-api` systemd service on the EC2 instance.
+
+Before enabling the workflow:
+
+* Register the EC2 instance as an online Systems Manager managed node. Attach an
+  instance profile with `AmazonSSMManagedInstanceCore` and narrowly scoped
+  `s3:GetObject` permission for the deployment JAR.
+* Create a private S3 bucket with Block Public Access enabled.
+* Configure GitHub OIDC in AWS and create a role trusted only for this
+  repository's `main` branch. Limit its permissions to uploading the deployment
+  object, deleting the staged object, and sending/polling Run Command for this
+  instance.
+* Add these GitHub Actions repository variables: `AWS_REGION`,
+  `AWS_ROLE_ARN`, `EC2_INSTANCE_ID`, and `DEPLOY_BUCKET`.
+
+No SSH private key or long-lived AWS access key is needed in GitHub. Keep
+PostgreSQL credentials in `/etc/aws-sandbox-api.env` on the instance; the
+workflow does not upload or change that file. The workflow deletes the staged
+JAR after deployment, including failed deployment attempts. Keep S3 bucket
+versioning disabled or configure noncurrent-version expiration, because deletes
+in a versioned bucket leave prior object versions retained.
