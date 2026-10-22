@@ -33,6 +33,25 @@ class AwsSandboxApiApplicationTests {
     private UserRepository userRepository;
 
     @Test
+    void exposesHealthEndpointToConfiguredFrontendOrigin() throws Exception {
+        mockMvc.perform(get("/api/health")
+                        .header("Origin", "http://localhost:4200"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(header().string(
+                        "Access-Control-Allow-Origin",
+                        "http://localhost:4200"));
+    }
+
+    @Test
+    void doesNotAllowCorsForAnUnconfiguredOrigin() throws Exception {
+        mockMvc.perform(get("/api/health")
+                        .header("Origin", "https://untrusted.example"))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+    }
+
+    @Test
     void supportsUserCrud() throws Exception {
         userRepository.deleteAll();
 

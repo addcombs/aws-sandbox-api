@@ -9,25 +9,24 @@
 
 ### Connecting to PostgreSQL on EC2
 
-Keep an SSH local port-forward open in a terminal on your computer:
+For a database on EC2, keep an SSH local port-forward open in a terminal on
+your computer:
 
 ```sh
 ssh -i <path-to-key.pem> -L 5432:127.0.0.1:5432 ec2-user@<instance-public-dns>
 ```
 
-Set these environment variables in the environment that starts the API. For
-PowerShell, for example:
+The shared IntelliJ API run configuration activates the `local` profile. The
+profile uses `src/main/resources/application-local.properties` for the local
+database URL and resolves the username and password from `DB_USERNAME` and
+`DB_PASSWORD`. Set those two values in the local run configuration's
+environment variables; do not put real credentials in the properties file or
+commit them. For other launch methods, set `SPRING_PROFILES_ACTIVE=local`.
 
-```powershell
-$env:DB_NAME = "<database-name>"
-$env:DB_USERNAME = "<database-user>"
-$env:DB_PASSWORD = "<database-password>"
-mvn spring-boot:run
-```
-
-The API connects to `127.0.0.1:5432` by default. Set `DB_HOST` and `DB_PORT` if
-the local tunnel uses a different address or port. For an IDE run configuration,
-set the same variables there. Do not commit database credentials.
+The local profile defaults to `127.0.0.1:5432/app_db`. Update the JDBC URL in
+the local properties file if your tunnel or local database uses a different
+host, port, or database. The packaged profile contains only credential
+placeholders, never real credentials.
 
 On startup, Spring Data JPA creates or updates the `users` table with `id`,
 `first_name`, `last_name`, `email_address`, `created_date`, and `updated_date`
@@ -49,6 +48,19 @@ The API provides these CRUD endpoints:
 The create and update request body is JSON with `firstName`, `lastName`, and
 `emailAddress` fields. Requests for a missing user return `404 Not Found`.
 
+### Frontend connection check
+
+`GET /api/health` returns `{"status":"UP"}` without querying or changing user
+data. It confirms that the API is reachable, but does not verify PostgreSQL
+health.
+
+Browser CORS access to this health endpoint is restricted to exact configured
+origins. The local profile sets `app.cors.allowed-origins` to
+`http://localhost:4200`. For an Amplify deployment, set
+`CORS_ALLOWED_ORIGINS` in `/etc/aws-sandbox-api.env` to the exact Amplify site
+origin (including `https://`), then restart `aws-sandbox-api`. Multiple origins
+may be comma-separated. Do not use `*`.
+
 Run the tests with `mvn test`, or package the application with `mvn package`.
 
 ### Deploy from GitHub Actions
@@ -67,7 +79,9 @@ Before enabling the workflow:
 * Configure GitHub OIDC in AWS and create a role trusted only for this
   repository's `main` branch. Limit its permissions to uploading the deployment
   object, deleting the staged object, and sending/polling Run Command for this
-  instance.
+  instance. `ssm:GetCommandInvocation` requires `"Resource": "*"`; keep that
+  wildcard scoped to this read-only action, while restricting `ssm:SendCommand`
+  to the `AWS-RunShellScript` document and this EC2 instance.
 * Add these GitHub Actions repository variables: `AWS_REGION`,
   `AWS_ROLE_ARN`, `EC2_INSTANCE_ID`, and `DEPLOY_BUCKET`.
 
