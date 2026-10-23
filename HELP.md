@@ -9,12 +9,23 @@
 
 ### Connecting to PostgreSQL on EC2
 
-For a database on EC2, keep an SSH local port-forward open in a terminal on
-your computer:
+The local profile connects to `127.0.0.1:5432`. When PostgreSQL is on the EC2
+instance, create an SSM port-forwarding session from PowerShell and leave that
+terminal running while the API is running:
 
-```sh
-ssh -i <path-to-key.pem> -L 5432:127.0.0.1:5432 ec2-user@<instance-public-dns>
+```powershell
+$InstanceId = "i-0123456789abcdef0" # Replace with the API EC2 instance ID.
+aws ssm start-session `
+  --target $InstanceId `
+  --document-name AWS-StartPortForwardingSession `
+  --parameters '{"portNumber":["5432"],"localPortNumber":["5432"]}' `
+  --region us-east-1
 ```
+
+The AWS CLI and Session Manager plugin must be installed, and the AWS identity
+used by the CLI must be allowed to start an SSM session. This forwards local
+port 5432 to port 5432 on the instance; do not expose PostgreSQL to the
+internet or enable inbound SSH for this tunnel.
 
 The shared IntelliJ API run configuration activates the `local` profile. The
 profile uses `src/main/resources/application-local.properties` for the local
