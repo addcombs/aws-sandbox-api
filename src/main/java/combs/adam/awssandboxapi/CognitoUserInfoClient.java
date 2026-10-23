@@ -16,10 +16,9 @@ public class CognitoUserInfoClient {
     private final String userInfoUri;
 
     public CognitoUserInfoClient(
-            RestClient.Builder restClientBuilder,
             @Value("${app.auth.user-info-uri}") String userInfoUri
     ) {
-        this.restClient = restClientBuilder.build();
+        this.restClient = RestClient.create();
         this.userInfoUri = userInfoUri;
     }
 
