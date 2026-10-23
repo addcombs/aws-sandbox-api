@@ -28,9 +28,9 @@ public class ApiCorsConfiguration implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/health")
+        registry.addMapping("/api/**")
                 .allowedOrigins(allowedOrigins.toArray(String[]::new))
-                .allowedMethods("GET")
+                .allowedMethods("GET", "POST", "PUT", "DELETE")
                 .maxAge(3600);
     }
 }
