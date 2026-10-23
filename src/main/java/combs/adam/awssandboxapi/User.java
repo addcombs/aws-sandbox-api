@@ -25,6 +25,9 @@ public class User {
     @Column(name = "last_name")
     private String lastName;
 
+    @Column(name = "cognito_sub", unique = true, nullable = false)
+    private String cognitoSub;
+
     @Column(name = "email_address", unique = true)
     private String emailAddress;
 
@@ -69,6 +72,14 @@ public class User {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public String getCognitoSub() {
+        return cognitoSub;
+    }
+
+    public void setCognitoSub(String cognitoSub) {
+        this.cognitoSub = cognitoSub;
     }
 
     public String getEmailAddress() {
